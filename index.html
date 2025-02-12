@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>다항식 빈출 (4) - [유형 A] 삭제본</title>
+  <style>
+    body {
+      background-color: #fff;
+      color: #000;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .screen {
+      display: none;
+      padding: 20px;
+    }
+    .active {
+      display: block;
+    }
+    button {
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #000;
+      padding: 8px 16px;
+      cursor: pointer;
+      margin: 4px;
+    }
+    #energyContainer {
+      width: 100%;
+      height: 20px;
+      border: 1px solid #000;
+      margin-bottom: 10px;
+      position: relative;
+      background-color: #fff;
+    }
+    #energyBar {
+      height: 100%;
+      background-color: #000;
+      width: 100%;
+    }
+    .info {
+      margin-bottom: 10px;
+    }
+    .option-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin: 5px 0;
+    }
+    #nextButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+</head>
+<body>
+  <!-- 시작 화면 -->
+  <div id="startScreen" class="screen active">
+    <h2>다항식 빈출 (4)</h2>
+    <div>
+      <label>이름: <input type="text" id="playerNameInput" /></label>
+    </div>
+    <div>
+      <p>난이도 선택:</p>
+      <label><input type="radio" name="difficulty" value="최상" /> 최상 (20초, 20점)</label><br>
+      <label><input type="radio" name="difficulty" value="상" /> 상 (30초, 15점)</label><br>
+      <label><input type="radio" name="difficulty" value="중" /> 중 (40초, 13점)</label><br>
+      <label><input type="radio" name="difficulty" value="하" /> 하 (시간제한 없음, 10점)</label>
+    </div>
+    <button id="startButton">게임 시작</button>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="gameScreen" class="screen">
+    <div class="info">
+      <span id="playerInfo"></span> | 
+      <span id="scoreInfo">점수: 0</span> | 
+      <span id="livesInfo">남은 기회: 3</span> | 
+      <span id="timeInfo">전체 게임 시간: 0초</span>
+    </div>
+    <div id="energyContainer">
+      <div id="energyBar"></div>
+    </div>
+    <div id="questionArea"></div>
+    <div id="optionsArea"></div>
+    <div id="feedbackArea"></div>
+    <button id="nextButton" disabled>다음 문제</button>
+  </div>
+
+  <!-- 게임 종료 화면 -->
+  <div id="gameOverScreen" class="screen">
+    <h2>게임 종료</h2>
+    <p id="finalScore"></p>
+    <p id="finalTime"></p>
+    <button id="sendScoreButton">점수전송</button>
+    <pre id="response"></pre>
+  </div>
+
+  <script>
+    // 문제 데이터
+    // [유형 A] 문제는 전부 삭제하였음
+    // 남은 문제는 B, C, D, E 유형
+
+    const initialQuestions = [
+      // [유형 B]
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)가 \\(a+b+c=3\\), \\(ab+bc+ca=-5\\), \\(abc=-4\\)를 만족할 때, \\((a+b)(b+c)(c+a)\\)의 값을 구하라.",
+        options: ["-15", "-11", "-7", "1", "5"],
+        correct: "-11"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)가 \\(a+b+c=4\\), \\(ab+bc+ca=1\\), \\(abc=-2\\)를 만족할 때, \\((a+b)(b+c)(c+a)\\)의 값을 구하라.",
+        options: ["4", "5", "6", "7", "8"],
+        correct: "6"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)가 \\(a+b+c=-1\\), \\(ab+bc+ca=2\\), \\(abc=-3\\)를 만족할 때, \\((a+b)(b+c)(c+a)\\)의 값을 구하라.",
+        options: ["-2", "0", "1", "3", "5"],
+        correct: "1"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)가 \\(a+b+c=5\\), \\(ab+bc+ca=6\\), \\(abc=2\\)를 만족할 때, \\((a+b)(b+c)(c+a)\\)의 값을 구하라.",
+        options: ["20", "24", "28", "32", "36"],
+        correct: "28"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)가 \\(a+b+c=-2\\), \\(ab+bc+ca=-3\\), \\(abc=1\\)를 만족할 때, \\((a+b)(b+c)(c+a)\\)의 값을 구하라.",
+        options: ["3", "4", "5", "6", "7"],
+        correct: "5"
+      },
+
+      // [유형 C]
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)에 대해 \\(a-b=3+\\sqrt{3}\\)와 \\(b-c=3-\\sqrt{3}\\)일 때, \\(a^2+b^2+c^2-ab-bc-ca\\)의 값을 구하라.",
+        options: ["12", "18", "24", "30", "36"],
+        correct: "30"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)에 대해 \\(a-b=4+\\sqrt{2}\\)와 \\(b-c=4-\\sqrt{2}\\)일 때, \\(a^2+b^2+c^2-ab-bc-ca\\)의 값을 구하라.",
+        options: ["44", "46", "48", "50", "52"],
+        correct: "50"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)에 대해 \\(a-b=2+\\sqrt{5}\\)와 \\(b-c=2-\\sqrt{5}\\)일 때, \\(a^2+b^2+c^2-ab-bc-ca\\)의 값을 구하라.",
+        options: ["15", "16", "17", "18", "19"],
+        correct: "17"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)에 대해 \\(a-b=5+\\sqrt{3}\\)와 \\(b-c=5-\\sqrt{3}\\)일 때, \\(a^2+b^2+c^2-ab-bc-ca\\)의 값을 구하라.",
+        options: ["70", "74", "78", "82", "86"],
+        correct: "78"
+      },
+      {
+        question: "세 실수 \\(a,\\; b,\\; c\\)에 대해 \\(a-b=3+\\sqrt{2}\\)와 \\(b-c=3-\\sqrt{2}\\)일 때, \\(a^2+b^2+c^2-ab-bc-ca\\)의 값을 구하라.",
+        options: ["27", "28", "29", "30", "31"],
+        correct: "29"
+      },
+
+      // [유형 D] (간단한 문제만 남김)
+      {
+        question: "등식 \\((x^2-x)^5+2=a_0+a_1x+\\cdots+a_{10}x^{10}\\)가 모든 \\(x\\)에 대해 성립할 때, \\(a_6+a_7+a_8+a_9+a_{10}\\)의 값을 구하라.",
+        options: ["1", "3", "5", "7", "9"],
+        correct: "1"
+      },
+
+      // [유형 E]
+      {
+        question: "다항식 \\(f(x)\\)를 \\((x+1)(x-3)\\)로 나누었을 때의 나머지가 \\(2x+1\\)이면, \\(f(2x-5)\\)를 \\(x-4\\)로 나누었을 때의 나머지를 구하라.",
+        options: ["-1", "3", "4", "7", "10"],
+        correct: "7"
+      },
+      {
+        question: "다항식 \\(f(x)\\)를 \\((x+2)(x-4)\\)로 나누었을 때의 나머지가 \\(3x-2\\)이면, \\(f(3x+1)\\)를 \\(x-2\\)로 나누었을 때의 나머지를 구하라.",
+        options: ["15", "17", "19", "21", "23"],
+        correct: "19"
+      },
+      {
+        question: "다항식 \\(f(x)\\)를 \\((x-2)(x-5)\\)로 나누었을 때의 나머지가 \\(-x+4\\)이면, \\(f(4x-3)\\)를 \\(x-2\\)로 나누었을 때의 나머지를 구하라.",
+        options: ["-3", "-2", "-1", "0", "1"],
+        correct: "-1"
+      },
+      {
+        question: "다항식 \\(f(x)\\)를 \\((x+3)(x-1)\\)로 나누었을 때의 나머지가 \\(2x+5\\)이면, \\(f(3x+2)\\)를 \\(x-3\\)로 나누었을 때의 나머지를 구하라.",
+        options: ["25", "26", "27", "28", "29"],
+        correct: "27"
+      },
+      {
+        question: "다항식 \\(f(x)\\)를 \\((x-4)(x+2)\\)로 나누었을 때의 나머지가 \\(-2x+3\\)이면, \\(f(x+1)\\)를 \\(x-5\\)로 나누었을 때의 나머지를 구하라.",
+        options: ["-11", "-10", "-9", "-8", "-7"],
+        correct: "-9"
+      }
+    ];
+    
+    let questions = [];
+    let currentQuestion = null;
+    let score = 0, lives = 3, elapsedTime = 0, questionTimer = null, globalTimer = null;
+    let timeLimit = 0, pointsPerQuestion = 0;
+    let playerName = "";
+    
+    // 화면 요소
+    const startScreen = document.getElementById("startScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const gameOverScreen = document.getElementById("gameOverScreen");
+    const playerInfo = document.getElementById("playerInfo");
+    const scoreInfo = document.getElementById("scoreInfo");
+    const livesInfo = document.getElementById("livesInfo");
+    const timeInfo = document.getElementById("timeInfo");
+    const questionArea = document.getElementById("questionArea");
+    const optionsArea = document.getElementById("optionsArea");
+    const feedbackArea = document.getElementById("feedbackArea");
+    const nextButton = document.getElementById("nextButton");
+    const energyBar = document.getElementById("energyBar");
+    const energyContainer = document.getElementById("energyContainer");
+    const finalScore = document.getElementById("finalScore");
+    const finalTime = document.getElementById("finalTime");
+    const sendScoreButton = document.getElementById("sendScoreButton");
+    
+    // 난이도 설정
+    const difficultySettings = {
+      "최상": { limit: 20, points: 20 },
+      "상": { limit: 30, points: 15 },
+      "중": { limit: 40, points: 13 },
+      "하": { limit: 0, points: 10 } // 0 => 시간제한 없음
+    };
+    
+    // Fisher-Yates shuffle
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+    
+    // 시작 버튼 클릭
+    document.getElementById("startButton").addEventListener("click", () => {
+      playerName = document.getElementById("playerNameInput").value.trim();
+      if (!playerName) {
+        alert("이름을 입력하세요.");
+        return;
+      }
+      const diffRadio = document.querySelector('input[name="difficulty"]:checked');
+      if (!diffRadio) {
+        alert("난이도를 선택하세요.");
+        return;
+      }
+      const diff = diffRadio.value;
+      timeLimit = difficultySettings[diff].limit;
+      pointsPerQuestion = difficultySettings[diff].points;
+      playerInfo.textContent = playerName + " (" + diff + ")";
+      startScreen.classList.remove("active");
+      gameScreen.classList.add("active");
+      
+      // 문제 셔플 & 초기화
+      questions = initialQuestions.slice();
+      shuffleArray(questions);
+      score = 0;
+      lives = 3;
+      elapsedTime = 0;
+      scoreInfo.textContent = "점수: " + score;
+      livesInfo.textContent = "남은 기회: " + lives;
+      
+      // 전역 타이머 시작
+      globalTimer = setInterval(() => {
+        elapsedTime++;
+        timeInfo.textContent = "전체 게임 시간: " + elapsedTime + "초";
+      }, 1000);
+      
+      loadNextQuestion();
+    });
+    
+    // 문제 로드
+    function loadNextQuestion() {
+      clearInterval(questionTimer);
+      nextButton.disabled = true;
+      feedbackArea.textContent = "";
+      optionsArea.innerHTML = "";
+      
+      // 문제를 다 소진하면 다시 초기화 (원형)
+      if (questions.length === 0) {
+        questions = initialQuestions.slice();
+        shuffleArray(questions);
+      }
+      currentQuestion = questions.pop();
+      questionArea.innerHTML = "<p>" + currentQuestion.question + "</p>";
+      // MathJax 렌더링
+      MathJax.typeset();
+      
+      // 옵션 섞기
+      let opts = currentQuestion.options.slice();
+      shuffleArray(opts);
+      opts.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = opt;
+        btn.addEventListener("click", () => {
+          if (!nextButton.disabled) return;
+          checkAnswer(opt);
+        });
+        optionsArea.appendChild(btn);
+      });
+      
+      // 타이머 (시간제한이 있을 경우만 동작)
+      if (timeLimit > 0) {
+        let timeLeft = timeLimit;
+        energyBar.style.width = "100%";
+        questionTimer = setInterval(() => {
+          timeLeft -= 0.1;
+          let percent = (timeLeft / timeLimit) * 100;
+          energyBar.style.width = percent + "%";
+          
+          if (timeLeft <= 0) {
+            clearInterval(questionTimer);
+            feedbackArea.textContent = "시간 초과! 정답: " + currentQuestion.correct;
+            decrementLife();
+            nextButton.disabled = false;
+          }
+        }, 100);
+      } else {
+        energyBar.style.width = "100%";
+      }
+    }
+    
+    // 정답 검사
+    function checkAnswer(selected) {
+      clearInterval(questionTimer);
+      const buttons = document.querySelectorAll(".option-btn");
+      buttons.forEach(btn => btn.disabled = true);
+      
+      if (selected === currentQuestion.correct) {
+        feedbackArea.textContent = "정답!";
+        score += pointsPerQuestion;
+        scoreInfo.textContent = "점수: " + score;
+      } else {
+        feedbackArea.textContent = "오답! 정답: " + currentQuestion.correct;
+        decrementLife();
+      }
+      
+      nextButton.disabled = false;
+    }
+    
+    function decrementLife() {
+      lives--;
+      livesInfo.textContent = "남은 기회: " + lives;
+      if (lives <= 0) {
+        endGame();
+      }
+    }
+    
+    nextButton.addEventListener("click", () => {
+      if (lives > 0) {
+        loadNextQuestion();
+      }
+    });
+    
+    function endGame() {
+      clearInterval(globalTimer);
+      clearInterval(questionTimer);
+      gameScreen.classList.remove("active");
+      gameOverScreen.classList.add("active");
+      finalScore.textContent = "최종 점수: " + score;
+      finalTime.textContent = "총 경과 시간: " + elapsedTime + "초";
+    }
+    
+    // 점수전송 함수
+    function saveData(game, name, score, elapsedTime) {
+      const FUNCTION_URL = "https://us-central1-record-f420d.cloudfunctions.net/report";
+      const requestData = {
+        game,
+        name,
+        score: parseInt(score, 10),
+        elapsedTime: parseInt(elapsedTime, 10)
+      };
+    
+      fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      })
+      .then(response => response.json().then(data => ({ ok: response.ok, data })))
+      .then(result => {
+        if (result.ok) {
+          document.getElementById('response').innerText = `성공: ${JSON.stringify(result.data, null, 2)}`;
+        } else {
+          document.getElementById('response').innerText = `오류: ${JSON.stringify(result.data, null, 2)}`;
+        }
+      })
+      .catch(error => {
+        console.error('요청 실패:', error);
+        document.getElementById('response').innerText = `네트워크 오류: ${error.message}`;
+      });
+    }
+    
+    sendScoreButton.addEventListener("click", () => {
+      saveData("다항식 빈출 (4)", playerName, score, elapsedTime);
+    });
+  </script>
+</body>
+</html>
